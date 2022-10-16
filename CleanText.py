@@ -2,11 +2,10 @@ from NLP_Models import TextMining as tm
 import time
 from NLP_Models import openewfile as of
 from tqdm import tqdm
-from pandarallel import pandarallel
+#import swifter
 
-pandarallel.initialize()
 
-def cleanningtext(data, dataname = str(), both = True, onlyclean = False, sentiment = True):
+def cleanningtext(data, both = True, onlyclean = False, sentiment = False):
     print('Cleaning Text')
     fSlang = of.openfile(path = './NLP_Models/slangword')
     bahasa = 'id'
@@ -18,20 +17,17 @@ def cleanningtext(data, dataname = str(), both = True, onlyclean = False, sentim
     tqdm.pandas()
     
     if both:
-        data['text'] = data['text'].astype('str')
-        data['text'] = data['text'].str.lower()
-        data = data[~data.text.str.contains('unavailable')]
-        data['cleaned_text'] = data['text'].parallel_apply(lambda x : tm.cleanText(x,fix=SlangS, pattern2 = True, lang = bahasa, lemma=lemmatizer, stops = stops, symbols_remove = True, numbers_remove = True, hashtag_remove=False, min_charLen = 2))
-        data['cleaned_text'] = data['cleaned_text'].parallel_apply(lambda x : tm.handlingnegation(x))
-        #data['cleaned_text'] = data['cleaned_text'].progress_apply(lambda x : tm.handlingporn(x))
+        data['tweet_full_text'] = data['tweet_full_text'].astype('str')
+        data['tweet_full_text'] = data['tweet_full_text'].str.lower()
+        data = data[~data.tweet_full_text.str.contains('unavailable')]
+        data['cleaned_tweet_full_text'] = data['tweet_full_text'].progress_apply(lambda x : tm.cleanText(x,fix=SlangS, pattern2 = True, lang = bahasa, lemma=lemmatizer, stops = stops, symbols_remove = True, numbers_remove = True, hashtag_remove=False, min_charLen = 2))
+        data['cleaned_tweet_full_text'] = data['cleaned_tweet_full_text'].progress_apply(lambda x : tm.handlingnegation(x))
     elif onlyclean: 
-        data['cleaned_text'] = data['text'].parallel_apply(lambda x : tm.cleanText(x, fix=SlangS, pattern2 = True, lang = bahasa, lemma=lemmatizer, stops = stops, symbols_remove = True, numbers_remove = True, hashtag_remove=False, min_charLen = 2))
+        data['cleaned_tweet_full_text'] = data['tweet_full_text'].progress_apply(lambda x : tm.cleanText(x, fix=SlangS, pattern2 = True, lang = bahasa, lemma=lemmatizer, stops = stops, symbols_remove = True, numbers_remove = True, hashtag_remove=False, min_charLen = 3))
     else:
-        data['cleaned_text'] = data['text'].parallel_apply(lambda x : tm.handlingnegation(x))
+        data['cleaned_tweet_full_text'] = data['tweet_full_text'].progress_apply(lambda x : tm.handlingnegation(x))
     
-    data = data[data['cleaned_text'].notna()]
+    data = data[data['tweet_full_text'].notna()]
     print("%s seconds" %(time.time()-start_time))
-    
-    data.to_json('./'+dataname+'.json', orient = 'columns')
     
     return data
